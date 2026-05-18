@@ -58,3 +58,14 @@ const DB = client.db("rentWheelsDB");
 const carsCollection = DB.collection("cars");
 const bookingCollection = DB.collection("booking");
 const usersCollection = DB.collection("users");
+
+//  Connect DB
+async function connectDB() {
+  try {
+    await client.connect();
+    console.log(" MongoDB Connected");
+  } catch (err) {
+    console.error(" MongoDB connection failed:", err);
+  }
+}
+connectDB();
