@@ -69,3 +69,47 @@ async function connectDB() {
   }
 }
 connectDB();
+
+//  Routes
+app.get("/", (req, res) => {
+  res.send(" Rent Wheels API is running successfully!");
+});
+
+// users route
+app.post("/users", async (req, res) => {
+  const user = req.body;
+
+  const exists = await usersCollection.findOne({
+    email: user.email,
+  });
+
+  if (exists) {
+    return res.send({ message: "User already exists" });
+  }
+
+  const result = await usersCollection.insertOne(user);
+  res.send(result);
+});
+
+app.get("/users", async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email)
+      return res
+        .status(400)
+        .send({ success: false, message: "Email required" });
+
+    const user = await usersCollection.findOne({ email: email });
+    if (!user)
+      return res
+        .status(404)
+        .send({ success: false, message: "User not found" });
+
+    res.send({ success: true, user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: false, message: "Failed to fetch user" });
+  }
+});
+
+//  CARS ROUTES
