@@ -43,3 +43,18 @@ const verifyToken = async (req, res, next) => {
       .json({ success: false, message: "Invalid or expired token" });
   }
 };
+
+//  MongoDB Setup
+const uri = `mongodb+srv://${process.env.DB_ADMIN}:${process.env.DB_PASSWORD}@cluster0.egeojdc.mongodb.net/?retryWrites=true&w=majority`;
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
+const DB = client.db("rentWheelsDB");
+const carsCollection = DB.collection("cars");
+const bookingCollection = DB.collection("booking");
+const usersCollection = DB.collection("users");
