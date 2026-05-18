@@ -162,3 +162,36 @@ app.get("/latest-cars", async (req, res) => {
     res.status(500).send({ error: "Failed to fetch cars" });
   }
 });
+
+// Add a car
+app.post("/cars", verifyToken, async (req, res) => {
+  try {
+    const data = req.body;
+    data.createdAt = new Date();
+
+    // Insert car
+    const result = await carsCollection.insertOne(data);
+
+    // Count total cars created by this user
+    if (req.user && req.user.email) {
+      const totalCars = await carsCollection.countDocuments({
+        providerEmail: req.user.email, // jei email diye car create korche
+      });
+
+      // Update user document
+      await usersCollection.updateOne(
+        { email: req.user.email },
+        { $set: { totalCreatedCar: totalCars } }
+      );
+    }
+
+    res.status(201).send({
+      success: true,
+      message: "Car added & user totalCreatedCar synced",
+      car: result,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to add car" });
+  }
+});
