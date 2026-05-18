@@ -324,3 +324,36 @@ app.post("/booking", verifyToken, async (req, res) => {
     res.status(500).send({ success: false, message: "Failed to add booking" });
   }
 });
+
+// Get bookings for logged-in user
+app.get("/booking", verifyToken, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const bookings = await bookingCollection
+      .find({ userEmail: email })
+      .toArray();
+    res.send(bookings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to fetch bookings" });
+  }
+});
+
+// Update a booking
+app.put("/booking/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).send({ message: "Invalid ID" });
+
+    const updateData = req.body;
+    const result = await bookingCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    res.status(200).send({ success: true, message: "Booking updated", result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: false, message: "Update failed" });
+  }
+});
