@@ -324,4 +324,3 @@ app.post("/booking", verifyToken, async (req, res) => {
     res.status(500).send({ success: false, message: "Failed to add booking" });
   }
 });
-
