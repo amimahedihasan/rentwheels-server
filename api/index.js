@@ -404,9 +404,9 @@ app.delete("/booking/:id", verifyToken, async (req, res) => {
     res.send({
       success: true,
       message: "Booking deleted, car status updated & user count updated",
-      deleteResult,
+      deleteResult ,
     });
-  } catch (err) {
+  } catch (err)  {
     console.error(err);
     res
       .status(500)
