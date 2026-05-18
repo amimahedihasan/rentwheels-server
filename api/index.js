@@ -357,3 +357,61 @@ app.put("/booking/:id", verifyToken, async (req, res) => {
     res.status(500).send({ success: false, message: "Update failed" });
   }
 });
+
+// Delete a booking
+app.delete("/booking/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    if (!ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .send({ success: false, message: "Invalid booking ID" });
+    }
+
+    const booking = await bookingCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!booking) {
+      return res
+        .status(404)
+        .send({ success: false, message: "Booking not found" });
+    }
+
+    // Only allow the booking owner to delete
+    if (booking.userEmail !== req.user.email) {
+      return res.status(403).send({ success: false, message: "Unauthorized" });
+    }
+
+    // Delete booking
+    const deleteResult = await bookingCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
+
+    // Update car status to available
+    if (booking.carId) {
+      await carsCollection.updateOne(
+        { _id: new ObjectId(booking.carId) },
+        { $set: { status: "available" } }
+      );
+    }
+
+    // ✅ Update user's totalBookingCar
+    await usersCollection.updateOne(
+      { email: booking.userEmail },
+      { $inc: { totalBookingCar: -1 } } // 1 kombe
+    );
+
+    res.send({
+      success: true,
+      message: "Booking deleted, car status updated & user count updated",
+      deleteResult,
+    });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send({ success: false, message: "Failed to delete booking" });
+  }
+});
+
+module.exports = app;
