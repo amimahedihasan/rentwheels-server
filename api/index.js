@@ -113,3 +113,52 @@ app.get("/users", async (req, res) => {
 });
 
 //  CARS ROUTES
+
+// Get all cars  by provider
+app.get("/cars", async (req, res) => {
+  try {
+    const query = {};
+    const providerEmail = req.query.ProviderEmail;
+    if (providerEmail) query.providerEmail = providerEmail;
+
+    const cars = await carsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.send(cars);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to get cars" });
+  }
+});
+
+app.get("/search", async (req, res) => {
+  try {
+    const text = req.query.search;
+    if (!text) return res.send([]);
+
+    const result = await carsCollection
+      .find({ carName: { $regex: text, $options: "i" } })
+      .toArray();
+
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Search failed" });
+  }
+});
+
+// Get latest 6 cars
+app.get("/latest-cars", async (req, res) => {
+  try {
+    const cars = await carsCollection
+      .find()
+      .limit(6)
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.send(cars);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Failed to fetch cars" });
+  }
+});
