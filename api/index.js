@@ -195,3 +195,133 @@ app.post("/cars", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Failed to add car" });
   }
 });
+
+// Get single car by ID
+app.get("/cars/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).send({ message: "Invalid car ID" });
+    const car = await carsCollection.findOne({ _id: new ObjectId(id) });
+    res.status(200).send(car);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to get car" });
+  }
+});
+
+// Update a car
+app.put("/cars/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).send({ success: false, message: "Invalid ID" });
+
+    const updatedCar = req.body;
+    const result = await carsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedCar }
+    );
+
+    res.send({
+      success: true,
+      message: "Car updated successfully",
+      updatedCar,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: false, message: "Update failed" });
+  }
+});
+
+// Delete a car
+app.delete("/cars/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).send({ success: false, message: "Invalid ID" });
+
+    // 1️⃣ Find car before deleting to get the owner email
+    const car = await carsCollection.findOne({ _id: new ObjectId(id) });
+    if (!car) {
+      return res.status(404).send({ success: false, message: "Car not found" });
+    }
+
+    const result = await carsCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 1) {
+      // 2️⃣ Update user's totalCreatedCar
+      if (car.providerEmail) {
+        // providerEmail er field user email hisebe dhorechi
+        const totalCars = await carsCollection.countDocuments({
+          providerEmail: car.providerEmail,
+        });
+
+        await usersCollection.updateOne(
+          { email: car.providerEmail },
+          { $set: { totalCreatedCar: totalCars } }
+        );
+      }
+
+      res
+        .status(200)
+        .send({ success: true, message: "Car deleted & user count updated" });
+    } else {
+      res.status(404).send({ success: false, message: "Car not found" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: false, message: "Failed to delete car" });
+  }
+});
+
+//  BOOKING ROUTES
+
+// Create booking
+app.post("/booking", verifyToken, async (req, res) => {
+  try {
+    const data = req.body;
+    delete data._id; // 🚫 Prevent frontend from overriding _id
+
+    data.userEmail = req.user.email;
+    data.createdAt = new Date();
+
+    // Insert booking
+    const result = await bookingCollection.insertOne(data);
+
+    // Update car status to Unavailable
+    if (data.carId) {
+      await carsCollection.updateOne(
+        { _id: new ObjectId(data.carId) },
+        { $set: { status: "Unavailable" } }
+      );
+    }
+
+    // Count total bookings for this user
+    if (req.user && req.user.email) {
+      const totalBookings = await bookingCollection.countDocuments({
+        userEmail: req.user.email,
+      });
+
+      // Update user totalBookingCar
+      await usersCollection.updateOne(
+        { email: req.user.email },
+        { $set: { totalBookingCar: totalBookings } }
+      );
+    }
+
+    const createdBooking = await bookingCollection.findOne({
+      _id: result.insertedId,
+    });
+
+    res.status(201).send({
+      success: true,
+      message: "Booking created & user totalBookingCar updated",
+      booking: createdBooking,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: false, message: "Failed to add booking" });
+  }
+});
+
