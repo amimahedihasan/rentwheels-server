@@ -1,0 +1,21 @@
+{
+   "name": "rent-wheels-server",
+   "version": "1.0.0",
+   "main": "api/index.js",
+   "license": "MIT",
+   "scripts": {
+      "start": "node api/index.js"
+   },
+   "keywords": [],
+   "author": "",
+   "type": "commonjs",
+   "dependencies": {
+      "cors": "^2.8.5",
+      "dotenv": "^17.2.3",
+      "express": "^5.1.0",
+      "firebase-admin": "^13.6.0",
+      "mongodb": "^7.0.0",
+      "nodemon": "^3.1.10",
+      "serverless-http": "^4.0.0"
+   }
+}
